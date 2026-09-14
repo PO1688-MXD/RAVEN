@@ -1,0 +1,406 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- 1. สร้าง ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "DISRAVEN_Gui"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+
+-- 2. หน้าจอดำเปิดเรื่อง (Intro Screen)
+local introFrame = Instance.new("Frame")
+introFrame.Size = UDim2.new(1, 0, 1, 0)
+introFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+introFrame.BorderSizePixel = 0
+introFrame.ZIndex = 100
+introFrame.Parent = gui
+
+local introText = Instance.new("TextLabel")
+introText.Size = UDim2.new(1, 0, 0.2, 0)
+introText.Position = UDim2.new(0, 0, 0.4, 0)
+introText.BackgroundTransparency = 1
+introText.Text = "รันสคริปต์ค่าย DISRAVEN แล้ว!"
+introText.TextColor3 = Color3.fromRGB(255, 255, 255)
+introText.TextSize = 24
+introText.Font = Enum.Font.SourceSansBold
+introText.ZIndex = 101
+introText.Parent = introFrame
+
+local closeIntroBtn = Instance.new("TextButton")
+closeIntroBtn.Size = UDim2.new(0.4, 0, 0.08, 0)
+closeIntroBtn.Position = UDim2.new(0.3, 0, 0.6, 0)
+closeIntroBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+closeIntroBtn.Text = "ปิด"
+closeIntroBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeIntroBtn.TextSize = 20
+closeIntroBtn.Font = Enum.Font.SourceSansBold
+closeIntroBtn.ZIndex = 101
+closeIntroBtn.Parent = introFrame
+
+-- 3. หน้าต่างใส่ Key
+local keyFrame = Instance.new("Frame")
+keyFrame.Size = UDim2.new(0.8, 0, 0.3, 0)
+keyFrame.Position = UDim2.new(0.1, 0, 0.35, 0)
+keyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+keyFrame.BorderColor3 = Color3.fromRGB(100, 100, 100)
+keyFrame.BorderSizePixel = 2
+keyFrame.Visible = false
+keyFrame.ZIndex = 90
+keyFrame.Parent = gui
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0.3, 0)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "กรุณาใส่ Key เพื่อเข้าใช้งาน\n(ทักขอแอดมินเอง)"
+keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyTitle.TextSize = 16
+keyTitle.Font = Enum.Font.SourceSans
+keyTitle.ZIndex = 91
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0.6, 0, 0.3, 0)
+keyInput.Position = UDim2.new(0.1, 0, 0.4, 0)
+keyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+keyInput.BorderColor3 = Color3.fromRGB(80, 80, 80)
+keyInput.Text = ""
+keyInput.PlaceholderText = "ใส่ Key ที่นี่..."
+keyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyInput.TextSize = 18
+keyInput.ZIndex = 91
+keyInput.Parent = keyFrame
+
+-- ฟีเจอร์ซ่อน Key
+local isKeyHidden = true
+local hideKeyBtn = Instance.new("TextButton")
+hideKeyBtn.Size = UDim2.new(0.15, 0, 0.3, 0)
+hideKeyBtn.Position = UDim2.new(0.72, 0, 0.4, 0)
+hideKeyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+hideKeyBtn.Text = "👁️"
+hideKeyBtn.TextSize = 18
+hideKeyBtn.ZIndex = 91
+hideKeyBtn.Parent = keyFrame
+
+local keyInputHidden = ""
+keyInput:GetPropertyChangedSignal("Text"):Connect(function()
+    if isKeyHidden then
+        local currentText = keyInput.Text
+        if #currentText > #keyInputHidden then
+            keyInputHidden = keyInputHidden .. string.sub(currentText, #currentText)
+        elseif #currentText < #keyInputHidden then
+            keyInputHidden = string.sub(keyInputHidden, 1, #currentText)
+        end
+        keyInput.Text = string.rep("•", #keyInputHidden)
+    else
+        keyInputHidden = keyInput.Text
+    end
+end)
+
+hideKeyBtn.MouseButton1Click:Connect(function()
+    isKeyHidden = not isKeyHidden
+    if isKeyHidden then
+        keyInput.Text = string.rep("•", #keyInputHidden)
+    else
+        keyInput.Text = keyInputHidden
+    end
+end)
+
+local submitKeyBtn = Instance.new("TextButton")
+submitKeyBtn.Size = UDim2.new(0.8, 0, 0.2, 0)
+submitKeyBtn.Position = UDim2.new(0.1, 0, 0.75, 0)
+submitKeyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+submitKeyBtn.Text = "เข้าสู่เมนู"
+submitKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitKeyBtn.Font = Enum.Font.SourceSansBold
+submitKeyBtn.TextSize = 16
+submitKeyBtn.ZIndex = 91
+submitKeyBtn.Parent = keyFrame
+
+-- 4. เมนูหลัก (Main Menu UI)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 380)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -190)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+mainFrame.BorderColor3 = Color3.fromRGB(128, 128, 128)
+mainFrame.BorderSizePixel = 2
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = false
+mainFrame.Parent = gui
+
+-- ปุ่มปิด / ย่อหน้าต่าง (❌)
+local closeMainBtn = Instance.new("TextButton")
+closeMainBtn.Size = UDim2.new(0, 25, 0, 25)
+closeMainBtn.Position = UDim2.new(1, -30, 0, 5)
+closeMainBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+closeMainBtn.Text = "❌"
+closeMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeMainBtn.TextSize = 12
+closeMainBtn.Parent = mainFrame
+
+-- ปุ่มย่อ (R)
+local miniBtn = Instance.new("TextButton")
+miniBtn.Size = UDim2.new(0, 45, 0, 45)
+miniBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
+miniBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+miniBtn.BorderColor3 = Color3.fromRGB(128, 128, 128)
+miniBtn.BorderSizePixel = 2
+miniBtn.Text = "R"
+miniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniBtn.Font = Enum.Font.SourceSansBold
+miniBtn.TextSize = 24
+miniBtn.Visible = false
+miniBtn.Active = true
+miniBtn.Draggable = true
+miniBtn.Parent = gui
+
+closeMainBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    miniBtn.Visible = true
+end)
+
+miniBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    miniBtn.Visible = false
+end)
+
+-- หัวข้อสคริปต์
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.8, 0, 0, 30)
+title.Position = UDim2.new(0.05, 0, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Script - DISRAVEN!"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 18
+title.Font = Enum.Font.SourceSansBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+-- ปุ่มรีเซ็ตตัวละคร
+local resetBtn = Instance.new("TextButton")
+resetBtn.Size = UDim2.new(0.9, 0, 0, 25)
+resetBtn.Position = UDim2.new(0.05, 0, 0, 35)
+resetBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+resetBtn.Text = "🔄 แตะซ้ำ เพื่อรีเซ็ต"
+resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetBtn.Font = Enum.Font.SourceSans
+resetBtn.TextSize = 14
+resetBtn.Parent = mainFrame
+
+resetBtn.MouseButton1Click:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.Health = 0
+    end
+end)
+
+-- ScrollingFrame สำหรับรายการเมนู
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(0.9, 0, 0, 300)
+scroll.Position = UDim2.new(0.05, 0, 0, 70)
+scroll.BackgroundTransparency = 1
+scroll.CanvasSize = UDim2.new(0, 0, 0, 420)
+scroll.ScrollBarThickness = 4
+scroll.Parent = mainFrame
+
+-- --- LOGIC & SYSTEM FEATURES ---
+local speedActive = false
+local speedValue = 16
+local jumpActive = false
+local jumpValue = 50
+local eggEspActive = false
+local treadmillActive = false
+
+-- 1. วิ่งเร็ว
+local speedBtn = Instance.new("TextButton")
+speedBtn.Size = UDim2.new(1, -10, 0, 30)
+speedBtn.Position = UDim2.new(0, 0, 0, 0)
+speedBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+speedBtn.Text = "• วิ่งเร็ว! [OFF]"
+speedBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+speedBtn.Font = Enum.Font.SourceSansBold
+speedBtn.Parent = scroll
+
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(1, -10, 0, 25)
+speedBox.Position = UDim2.new(0, 0, 0, 35)
+speedBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+speedBox.PlaceholderText = "ปรับความเร็ว (1-1000)"
+speedBox.Text = "16"
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.Parent = scroll
+
+speedBtn.MouseButton1Click:Connect(function()
+    speedActive = not speedActive
+    speedBtn.Text = speedActive and "• วิ่งเร็ว! [ON]" or "• วิ่งเร็ว! [OFF]"
+    speedBtn.TextColor3 = speedActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+end)
+
+speedBox.FocusLost:Connect(function()
+    local val = tonumber(speedBox.Text)
+    if val then
+        speedValue = math.clamp(val, 1, 1000)
+        speedBox.Text = tostring(speedValue)
+    end
+end)
+
+-- 2. โดดสูง
+local jumpBtn = Instance.new("TextButton")
+jumpBtn.Size = UDim2.new(1, -10, 0, 30)
+jumpBtn.Position = UDim2.new(0, 0, 0, 70)
+jumpBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+jumpBtn.Text = "• โดดสูง! [OFF]"
+jumpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+jumpBtn.Font = Enum.Font.SourceSansBold
+jumpBtn.Parent = scroll
+
+local jumpBox = Instance.new("TextBox")
+jumpBox.Size = UDim2.new(1, -10, 0, 25)
+jumpBox.Position = UDim2.new(0, 0, 0, 105)
+jumpBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+jumpBox.PlaceholderText = "ปรับความสูง (1-100)"
+jumpBox.Text = "50"
+jumpBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+jumpBox.Parent = scroll
+
+jumpBtn.MouseButton1Click:Connect(function()
+    jumpActive = not jumpActive
+    jumpBtn.Text = jumpActive and "• โดดสูง! [ON]" or "• โดดสูง! [OFF]"
+    jumpBtn.TextColor3 = jumpActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+end)
+
+jumpBox.FocusLost:Connect(function()
+    local val = tonumber(jumpBox.Text)
+    if val then
+        jumpValue = math.clamp(val, 1, 100)
+        jumpBox.Text = tostring(jumpValue)
+    end
+end)
+
+-- Loop อัปเดต Speed / Jump
+RunService.Stepped:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local hum = LocalPlayer.Character.Humanoid
+        if speedActive then
+            hum.WalkSpeed = speedValue
+        end
+        if jumpActive then
+            hum.UseJumpPower = true
+            hum.JumpPower = jumpValue * 5 -- สเกลให้แรงสะใจ
+        end
+    end
+end)
+
+-- 3. โชว์ชื่อไข่ (ESP)
+local eggBtn = Instance.new("TextButton")
+eggBtn.Size = UDim2.new(1, -10, 0, 35)
+eggBtn.Position = UDim2.new(0, 0, 0, 140)
+eggBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+eggBtn.Text = "• โชว์ชื่อไข่ [OFF]"
+eggBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+eggBtn.Font = Enum.Font.SourceSansBold
+eggBtn.Parent = scroll
+
+local espFolder = Instance.new("Folder")
+espFolder.Name = "EggESPFolder"
+espFolder.Parent = Workspace
+
+eggBtn.MouseButton1Click:Connect(function()
+    eggActive = not eggActive
+    eggBtn.Text = eggActive and "• โชว์ชื่อไข่ [ON]" or "• โชว์ชื่อไข่ [OFF]"
+    eggBtn.TextColor3 = eggActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+    
+    if not eggActive then
+        espFolder:ClearAllChildren()
+    end
+end)
+
+-- ESP Loop สแกนหาไข่ในแมพ
+task.spawn(function()
+    while task.wait(1) do
+        if eggActive then
+            espFolder:ClearAllChildren()
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and (string.find(string.lower(obj.Name), "egg") or obj:FindFirstChild("Weight")) then
+                    -- กล่องสี่เหลี่ยมสีดำครอบไข่
+                    local box = Instance.new("SelectionBox")
+                    box.Color3 = Color3.fromRGB(0, 0, 0)
+                    box.Adornee = obj
+                    box.Parent = espFolder
+                    
+                    -- ตัวหนังสือแสดงชื่อ + น้ำหนัก
+                    local bb = Instance.new("BillboardGui")
+                    bb.Size = UDim2.new(0, 100, 0, 40)
+                    bb.AlwaysOnTop = true
+                    bb.Adornee = obj
+                    
+                    local txt = Instance.new("TextLabel")
+                    txt.Size = UDim2.new(1, 0, 1, 0)
+                    txt.BackgroundTransparency = 1
+                    txt.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    txt.TextSize = 14
+                    txt.Font = Enum.Font.SourceSansBold
+                    
+                    local weightVal = obj:FindFirstChild("Weight") and obj.Weight.Value or "N/A"
+                    txt.Text = obj.Name .. "\nน้ำหนัก: " .. tostring(weightVal)
+                    txt.Parent = bb
+                    bb.Parent = espFolder
+                end
+            end
+        end
+    end
+end)
+
+-- 4. ลู่วิ่งอัตโนมัติ
+local treadmillBtn = Instance.new("TextButton")
+treadmillBtn.Size = UDim2.new(1, -10, 0, 35)
+treadmillBtn.Position = UDim2.new(0, 0, 0, 185)
+treadmillBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+treadmillBtn.Text = "• ลู่วิ่งอัตโนมัติ! [OFF]"
+treadmillBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+treadmillBtn.Font = Enum.Font.SourceSansBold
+treadmillBtn.Parent = scroll
+
+treadmillBtn.MouseButton1Click:Connect(function()
+    treadmillActive = not treadmillActive
+    treadmillBtn.Text = treadmillActive and "• ลู่วิ่งอัตโนมัติ! [ON]" or "• ลู่วิ่งอัตโนมัติ! [OFF]"
+    treadmillBtn.TextColor3 = treadmillActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if treadmillActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if string.find(string.lower(obj.Name), "treadmill") or string.find(string.lower(obj.Name), "tread") then
+                    local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                    if targetPart then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- --- EVENT CONNECTIONS ---
+-- ปุ่มปิดจอดำเปิดตัว -> เปิดหน้าต่างใส่ Key
+closeIntroBtn.MouseButton1Click:Connect(function()
+    introFrame.Visible = false
+    keyFrame.Visible = true
+end)
+
+-- ตรวจสอบ Key
+submitKeyBtn.MouseButton1Click:Connect(function()
+    if keyInputHidden == "1688" then
+        keyFrame.Visible = false
+        mainFrame.Visible = true
+    else
+        keyTitle.Text = "❌ Key ไม่ถูกต้อง! (ทักขอแอดมินเอง)"
+        keyTitle.TextColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
